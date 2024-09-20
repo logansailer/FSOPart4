@@ -3,7 +3,7 @@ const app = express();
 const cors = require("cors");
 require("dotenv").config();
 
-const Note = require("./models/note");
+const Note = require("./controllers/note");
 
 const requestLogger = (request, response, next) => {
   console.log("Method:", request.method);
