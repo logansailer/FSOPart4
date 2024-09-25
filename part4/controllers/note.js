@@ -1,35 +1,61 @@
-const mongoose = require("mongoose");
+const notesRouter = require("express").Router();
+const Note = require("../models/note");
 
-mongoose.set("strictQuery", false);
+notesRouter.get("/", (request, response) => {
+  Note.find({}).then((notes) => {
+    response.json(notes);
+  });
+});
 
-const url = process.env.MONGODB_URI;
+notesRouter.get("/:id", (request, response, next) => {
+  Note.findById(request.params.id)
+    .then((note) => {
+      if (note) {
+        response.json(note);
+      } else {
+        response.status(404).end();
+      }
+    })
+    .catch((error) => next(error));
+});
 
-console.log("connecting to", url);
+notesRouter.post("/", (request, response, next) => {
+  const body = request.body;
 
-mongoose
-  .connect(url)
-  .then(() => {
-    console.log("connected to MongoDB");
-  })
-  .catch((error) => {
-    console.log("error connecting to MongoDB:", error.message);
+  const note = new Note({
+    content: body.content,
+    important: body.important || false,
   });
 
-const noteSchema = new mongoose.Schema({
-  content: {
-    type: String,
-    minlength: 5,
-    required: true,
-  },
-  important: Boolean,
+  note
+    .save()
+    .then((savedNote) => {
+      response.json(savedNote);
+    })
+    .catch((error) => next(error));
 });
 
-noteSchema.set("toJSON", {
-  transform: (document, returnedObject) => {
-    returnedObject.id = returnedObject._id.toString();
-    delete returnedObject._id;
-    delete returnedObject.__v;
-  },
+notesRouter.delete("/:id", (request, response, next) => {
+  Note.findByIdAndDelete(request.params.id)
+    .then(() => {
+      response.status(204).end();
+    })
+    .catch((error) => next(error));
 });
 
-module.exports = mongoose.model("Note", noteSchema);
+notesRouter.put("/:id", (request, response, next) => {
+  const body = request.body;
+
+  const note = {
+    content: body.content,
+    important: body.important,
+  };
+
+  Note.findByIdAndUpdate(request.params.id, note, { new: true })
+    .then((updatedNote) => {
+      response.json(updatedNote);
+    })
+    .catch((error) => next(error));
+});
+
+module.exports = notesRouter;
