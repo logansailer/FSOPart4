@@ -34,6 +34,11 @@ const initialBlogs = [
   },
 ];
 
+const blogsInDb = async () => {
+  const blogs = await Blog.find({});
+  return blogs.map((blog) => blog.toJSON());
+};
+
 beforeEach(async () => {
   await Blog.deleteMany({});
   let blogObject = new Blog(initialBlogs[0]);
@@ -65,11 +70,11 @@ test("there are three blogs", async () => {
 });
 
 test("the identifier is named 'id' not '_id'", async () => {
-    const response = await api.get("/api/blogs")
+  const response = await api.get("/api/blogs");
 
-    const testNote = response.body[0]
-    assert(testNote.hasOwnProperty("id"));
-})
+  const testNote = response.body[0];
+  assert(testNote.hasOwnProperty("id"));
+});
 
 test("a valid blog can be added ", async () => {
   const newBlog = {
@@ -94,6 +99,39 @@ test("a valid blog can be added ", async () => {
   assert.strictEqual(response.body.length, initialBlogs.length + 1);
 
   assert(contents.includes("First class tests"));
+});
+
+test("a valid blog can be updated", async () => {
+  const allBlogs = await blogsInDb();
+
+  const blogToUpdate = allBlogs.find(
+    (blog) => blog.title === "Go To Statement Considered Harmful"
+  );
+
+  updated = {
+    ...blogToUpdate,
+    likes: blogToUpdate.likes + 1,
+  };
+
+  await api.put(`/api/blogs/${blogToUpdate.id}`).send(updated);
+
+  const blogsAtEnd = await blogsInDb();
+
+  const afterUpdateLikes = blogsAtEnd.map((r) => r.likes);
+  assert.strictEqual(afterUpdateLikes[1], 6);
+});
+
+test("a valid blog can be deleted", async () => {
+  const blogToDelete = initialBlogs[0];
+
+  await api.delete(`/api/blogs/${blogToDelete._id}`).expect(204);
+
+  const blogsAtEnd = await blogsInDb();
+
+  assert.strictEqual(blogsAtEnd.length, initialBlogs.length - 1);
+
+  const afterDelete = blogsAtEnd.map((r) => r.url);
+  assert(!afterDelete.includes(blogToDelete.url));
 });
 
 after(async () => {
