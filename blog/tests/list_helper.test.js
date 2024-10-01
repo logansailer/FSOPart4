@@ -73,7 +73,7 @@ describe("total likes", () => {
     },
   ];
 
-  test("when list has only no blogs", () => {
+  test("when list has no blogs", () => {
     const result = listHelper.totalLikes(noBlogs);
     assert.strictEqual(result, "no blogs");
   });
